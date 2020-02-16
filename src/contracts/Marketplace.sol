@@ -53,7 +53,7 @@ contract Marketplace {
         //Fetch owner
         address payable _seller = _product.owner;
         //Make sure product is valid
-        require(_product.id > 0 && _product.id < productCount);
+        require(_product.id > 0 && _product.id <= productCount);
         //The price is enough to buy the product
         require(msg.value >= _product.price);
         //Product not already purchased
