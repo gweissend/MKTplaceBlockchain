@@ -29,7 +29,10 @@ contract('Marketplace', ([deployer, seller, buyer]) => {
         assert.equal(productCount, 1)
         const event = result.logs[0].args
         assert.equal(event.id.toNumber(), productCount.toNumber(), 'id is correct')
-        assert.equal(event.owner, seller, 'id is correct')
+        assert.equal(event.owner, seller, 'owner is correct')
+        assert.equal(event.purchased, false, 'purchased is correct')
+        
+        
         //FAILURES: product must have a name
         result = await marketplace.createProduct('', web3.utils.toWei('1', 'Ether'), {from: seller}).should.be.rejected;
         //MUST HAVE PRICE
@@ -38,19 +41,42 @@ contract('Marketplace', ([deployer, seller, buyer]) => {
 
     it('lists product', async () => {
         const product = await marketplace.products(productCount)
-        assert.equal(event.id.toNumber(), productCount.toNumber(), 'id is correct')
-        assert.equal(event.owner, seller, 'id is correct')
-        //FAILURES: product must have a name
-        result = await marketplace.createProduct('', web3.utils.toWei('1', 'Ether'), {from: seller}).should.be.rejected;
-        //MUST HAVE PRICE
-        result = await marketplace.createProduct('iPhone', 0, {from: seller}).should.be.rejected;
+        assert.equal(product.id.toNumber(), productCount.toNumber(), 'id is correct')
+        assert.equal(product.name, 'iPhoneX', 'name is correct')
+        assert.equal(product.price, '1000000000000000000', 'price is correct')
+        assert.equal(product.owner, seller, 'owner is correct')
+        assert.equal(product.purchased, false, 'purchased is correct')
     })
 
 
     it('sells product', async () => {
+
+        // Track seller balance before purchase
+        let oldSellerBalance
+        oldSellerBalance = await web3.eth.getBalance(seller)
+        oldSellerBalance = new web3.utils.BN(oldSellerBalance)
+
         //Success: buyer makes purchase
-        const result = await marketplace.products(productCount, {from: buyer, value: web3.utils.toWei('1', 'Ether')});
+        const result = await marketplace.purchaseProduct(productCount, {from: buyer, value: web3.utils.toWei('1', 'Ether')});
+        //console.log(result)
         
+        // Check logs
+        const event = result.logs[0].args
+        
+        assert.equal(event.id.toNumber(), productCount.toNumber(), 'id is correct')
+        assert.equal(event.owner, buyer, 'owner is correct')
+
+        let newSellerBalance
+        newSellerBalance = await web3.eth.getBalance(seller)
+        newSellerBalance = new web3.utils.BN(oldSellerBalance)
+
+        let price 
+        price = web3.utils.toWei('1', 'Ether')
+        price = new web3.utils.BN(price)
+        
+        const expectedBalance = oldSellerBalance.add(price)
+
+        assert.equal(newSellerBalance.toString(), expectedBalance.toString())
     })
 })
 })
